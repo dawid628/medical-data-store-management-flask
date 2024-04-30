@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" 
+          rel="stylesheet" 
+          integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" 
+          crossorigin="anonymous">
+    <title>Login</title>
+</head>
+<body>
+    <!-- Flash messages -->
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>{{ message }}</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
+    <!-- Grid row -->
+    <div class="row d-flex justify-content-center">
+        <!-- Grid column -->
+        <div class="col-md-4">
+            <form method="POST">
+                {{ form.csrf_token }}
+                <div class="form-row align-items-center">
+                    <div class="col-auto my-1">
+                        <label class="sr-only" for="inlineFormInputName">{{ form.name.label }}</label> 
+                        {{ form.name(class="form-control") }}
+                    </div>
+                    <div class="col-auto my-1">
+                        <label class="sr-only" for="inlineFormInputGroupUsername">{{ form.password.label }}</label>
+                        {{ form.password(class="form-control") }}
+                    </div>
+                    <div class="col-auto my-1">
+                        <div class="form-check">
+                            {{ form.remember(class="form-check-input") }}
+                            <label class="form-check-label" for="autoSizingCheck2">
+                                {{ form.remember.label }}
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-auto my-1">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <!-- End Grid column -->
+    </div>
+    <!-- End Grid row -->
+
+    <!-- Bootstrap JS, including Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" 
+            integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" 
+            crossorigin="anonymous"></script>
+</body>
+</html>
