@@ -1,6 +1,6 @@
 from flask import Flask, render_template, url_for, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, logout_user, current_user
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from safety import is_safe_url
 from forms import LoginForm, UserForm, EditUserForm, HospitalForm
 
@@ -11,8 +11,11 @@ app.config.from_pyfile('config.cfg')
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login' # wskazuje funkcje z routingu
-login_manager.login_message = 'Musisz być zalogowany jako pracownik.'
 
+@login_manager.unauthorized_handler
+def unauthorized():
+    flash('Aplikacja dostępna tylko dla pracowników.', 'warning')
+    return redirect(url_for('login'))
 
 
 ##### import models after db init #####
@@ -33,7 +36,7 @@ def load_user(id):
 @app.route('/init')
 def init():
     db.create_all()
-    admin = User.query.filter(User.name=='admin').first()
+    admin = User.query.filter(User.name=='admin', User.is_active == True).first()
     if admin is None:
         admin = User(id=1, name='admin', password=User.get_hashed_password('admin'),
                      first_name='Dawid', last_name='Metelski', email='dawidmetelski@gmail.com')
@@ -55,7 +58,7 @@ def login():
             if next_page and is_safe_url(next_page):
                 return redirect(next_page)
             return redirect(url_for('index'))  # Przekierowuje do strony głównej po zalogowaniu
-    return render_template('login.html', form = form)
+    return render_template('user/login.html', form = form)
 
 
 @app.route('/logout')
@@ -66,12 +69,14 @@ def logout():
 
 ##### users management #####
 @app.route('/users')
+@login_required
 def users():
     users = User.query.all()
     return render_template('user/users.html', users = users)
 
 
 @app.route('/delete_user/<int:user_id>')
+@login_required
 def delete_user(user_id):
     user = User.query.get(user_id)
     if user:
@@ -85,6 +90,7 @@ def delete_user(user_id):
 
 
 @app.route('/new_user', methods=['GET', 'POST'])
+@login_required
 def new_user():
     form = UserForm()
     hospitals = Hospital.query.all()
@@ -114,6 +120,7 @@ def new_user():
 
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
 def edit_user(user_id):
     user = User.query.get(user_id)
     form = EditUserForm(obj=user)
@@ -129,16 +136,30 @@ def edit_user(user_id):
     else:
         flash('Nie znaleziono użytkownika o podanym identyfikatorze.', 'error')
         return redirect(url_for('users'))
+    
+
+@app.route('/change_user_status/<int:user_id>')
+def change_user_status(user_id):
+    user = User.query.get(user_id)
+    if user:
+        user.is_active = not user.is_active
+        db.session.commit()
+        flash('Status użytkownika został zmieniony.', 'success')
+    else:
+        flash('Nie znaleziono użytkownika.', 'warning')
+    return redirect(url_for('users'))
 
     
 
 ##### hospital management #####
 @app.route('/hospitals')
+@login_required
 def hospitals():
     hospitals = Hospital.query.all()
     return render_template('hospital/hospitals.html', hospitals = hospitals)
 
 @app.route('/new_hospital', methods = ['GET', 'POST'])
+@login_required
 def new_hospital():
     form = HospitalForm()
     if form.validate_on_submit():
@@ -159,6 +180,7 @@ def new_hospital():
 
 
 @app.route('/edit_hospital/<int:hospital_id>', methods=['GET', 'POST'])
+@login_required
 def edit_hospital(hospital_id):
     hospital = Hospital.query.get(hospital_id)
     form = HospitalForm(obj = hospital)
@@ -171,6 +193,7 @@ def edit_hospital(hospital_id):
 
 
 @app.route('/delete_hospital/<int:hospital_id>', methods=['GET', 'POST'])
+@login_required
 def delete_hospital(hospital_id):
     hospital = Hospital.query.get(hospital_id)
     if hospital:
@@ -187,6 +210,7 @@ def delete_hospital(hospital_id):
 
 ##### app routing #####
 @app.route('/', methods=['GET', 'POST'])
+@login_required
 def index():
     return render_template('index.html', current_user = current_user)
 

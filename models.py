@@ -16,6 +16,7 @@ class User(db.Model, UserMixin):
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
     email = db.Column(db.String(50), unique=True)
+    is_active = db.Column(db.Boolean, default=True)
 
     hospital_id = db.Column(db.Integer, db.ForeignKey('hospital.id'))
 

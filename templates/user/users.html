@@ -47,6 +47,7 @@
                 <th scope="col">Imie</th>
                 <th scope="col">Nazwisko</th>
                 <th scope="col">Szpital</th>
+                <th scope="col">Aktywny</th>
                 <th scope="col">Actions</th>
             </tr>
             </thead>
@@ -59,8 +60,9 @@
                 <td>{{ user.first_name }}</td>
                 <td>{{ user.last_name }}</td>
                 <td>{{ user.hospital.name }}</td>
-
+                <td>{{ 'Tak' if user.is_active else 'Nie' }}</td>
                 <td>
+                    <a href="{{ url_for('change_user_status', user_id=user.id) }}" class="btn btn-{{ 'danger' if user.is_active else 'success' }} btn-sm" role="button">{{ 'Blokuj' if user.is_active else 'Aktywuj' }}</a>
                     <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-success btn-sm" role="button">Edit</a>
                     <a type="button" class="btn btn-danger btn-sm delete-confirm"
                        data-toggle="modal" data-target="#confirmDeleteModal"
