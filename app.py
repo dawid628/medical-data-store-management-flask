@@ -2,9 +2,12 @@ from flask import Flask, render_template, url_for, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from safety import is_safe_url
-from forms import LoginForm, UserForm, EditUserForm, HospitalForm, RoleForm, EditDetailsForm
+from forms import LoginForm, UserForm, EditUserForm, HospitalForm, RoleForm, EditDetailsForm, CSVUploadForm
 from functools import wraps
-
+import pandas as pd
+import os
+from werkzeug.utils import secure_filename
+from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_pyfile('config.cfg')
@@ -20,7 +23,7 @@ def unauthorized():
 
 
 ##### import models after db init #####
-from models import User, Hospital, Role
+from models import User, Hospital, Role, History
 
 
 
@@ -176,7 +179,7 @@ def edit_user(user_id):
     if user:
         if form.validate_on_submit():
             form.populate_obj(user)  # Uaktualnij obiekt użytkownika na podstawie danych z formularza
-            if form.password.data:  # Sprawdź, czy zostało dostarczone nowe hasło
+            if not current_user.id == user_id and form.password.data:  # Sprawdź, czy zostało dostarczone nowe hasło
                 user.password = User.get_hashed_password(form.password.data)  # Zahaszuj i przypisz nowe hasło
             db.session.commit()
             flash('Dane użytkownika zostały zaktualizowane.', 'success')
@@ -364,6 +367,39 @@ def index():
 
 #     def __repr__(self):
 #         return 'Prod: ({}) {}'.format(self.id, self.name)
+
+##### data management #####
+@app.route('/new_data', methods=['GET', 'POST'])
+@login_required
+def new_data():
+    form = CSVUploadForm()
+    if form.validate_on_submit():
+        file = form.csv_file.data
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')  # Utworzenie znacznika czasu
+        filename = secure_filename(f"{timestamp}_{file.filename}")
+        file.save(os.path.join('files', filename))
+        
+        # Zapis do historii
+        dateNow = datetime.now()
+        history = History(user_id = current_user.id, filename = filename, date = dateNow, hospital_id = current_user.hospital.id)
+        db.session.add(history)
+        db.session.commit()
+
+        # Czytanie i wyświetlanie danych CSV w terminalu
+        data = pd.read_csv(os.path.join('files', filename))
+        print(data)
+
+        flash('Plik CSV został dodany i wczytany.', 'success')
+        return redirect(url_for('new_data'))
+
+    return render_template('data/new_data.html', form=form)
+
+
+@app.route('/data_history')
+@login_required
+def data_history():
+    history = History.query.all()
+    return render_template('data/history.html', history = history)
 
 if __name__ == '__main__':
     app.run()

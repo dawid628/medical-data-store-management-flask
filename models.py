@@ -14,6 +14,7 @@ class Hospital(db.Model):
     name = db.Column(db.String(50), unique=True)    
 
     user = db.relationship('User', backref='hospital', lazy='dynamic')
+    history = db.relationship('History', backref='hospital', lazy='dynamic')
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,6 +27,8 @@ class User(db.Model, UserMixin):
 
     hospital_id = db.Column(db.Integer, db.ForeignKey('hospital.id'))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+
+    history = db.relationship('History', backref='user', lazy='dynamic')
 
     def __repr__(self):
         return 'User: ({})'.format(self.name)
@@ -52,3 +55,12 @@ class User(db.Model, UserMixin):
         if self.role.name == 'Administrator':
             return True
         return False
+    
+class History(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    filename = db.Column(db.String(100), unique=True)
+    date = db.Column(db.DateTime)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospital.id'))
+
+

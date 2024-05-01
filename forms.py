@@ -2,6 +2,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, validators, SelectField
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, Email, Length
+from flask_wtf.file import FileField, FileRequired
+
 
 ##### user forms #####
 class LoginForm(FlaskForm):
@@ -43,3 +45,8 @@ class HospitalForm(FlaskForm):
 ##### role forms #####
 class RoleForm(FlaskForm):
     name = StringField('Nazwa roli', validators=[DataRequired(), Length(max=30)])    
+
+##### file forms #####
+class CSVUploadForm(FlaskForm):
+    csv_file = FileField('Wybierz plik CSV', validators=[FileRequired()])
+    submit = SubmitField('Dodaj plik CSV')

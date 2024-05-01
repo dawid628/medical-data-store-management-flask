@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+        <table class="table">
+            <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Użytkownik</th>
+                <th scope="col">Szpital</th>
+                <th scope="col">Plik</th>
+                <th scope="col">Data dodania</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in history %}
+            <tr>
+                <th scope="row">{{ item.id }}</th>
+                <td>{{ item.user.name }}</td>
+                <td>{{ item.hospital.name }}</td>
+                <td>{{ item.filename }}</td>
+                <td>{{ item.date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
