@@ -3,6 +3,12 @@ import binascii
 from flask_login import UserMixin
 from app import db
 
+class Role(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True)    
+
+    users = db.relationship('User', backref='role', lazy='dynamic')
+
 class Hospital(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)    
@@ -19,6 +25,7 @@ class User(db.Model, UserMixin):
     is_active = db.Column(db.Boolean, default=True)
 
     hospital_id = db.Column(db.Integer, db.ForeignKey('hospital.id'))
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
 
     def __repr__(self):
         return 'User: ({})'.format(self.name)
@@ -40,3 +47,8 @@ class User(db.Model, UserMixin):
         salt.encode('ascii'), 100000)
         pwdhash = binascii.hexlify(pwdhash).decode('ascii')
         return pwdhash == stored_password
+    
+    def is_admin(self):
+        if self.role.name == 'Administrator':
+            return True
+        return False

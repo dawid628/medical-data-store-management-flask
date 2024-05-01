@@ -2,7 +2,8 @@ from flask import Flask, render_template, url_for, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from safety import is_safe_url
-from forms import LoginForm, UserForm, EditUserForm, HospitalForm
+from forms import LoginForm, UserForm, EditUserForm, HospitalForm, RoleForm
+from functools import wraps
 
 
 app = Flask(__name__)
@@ -19,7 +20,7 @@ def unauthorized():
 
 
 ##### import models after db init #####
-from models import User, Hospital
+from models import User, Hospital, Role
 
 
 
@@ -29,6 +30,15 @@ def load_user(id):
     return User.query.filter(User.id == id).first() 
 
 
+def is_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin():
+            flash('Akcja dostępna tylko dla administratorów.', 'warning')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 ##### routing #####
 
@@ -36,14 +46,22 @@ def load_user(id):
 @app.route('/init')
 def init():
     db.create_all()
-    admin = User.query.filter(User.name=='admin', User.is_active == True).first()
+    admin = User.query.filter(User.name == 'admin', User.is_active == True).first()
+    role = Role.query.filter(Role.name == 'Administrator').first()
+    
+    if role is None:
+        role = Role(id = 1, name = 'Administrator')
+        db.session.add(role)
+        db.session.commit()
+
     if admin is None:
         admin = User(id=1, name='admin', password=User.get_hashed_password('admin'),
-                     first_name='Dawid', last_name='Metelski', email='dawidmetelski@gmail.com')
+                     first_name='Dawid', last_name='Metelski', email='dawidmetelski@gmail.com', role_id = role.id)
         db.session.add(admin)
         db.session.commit()
 
-    return '<h1>Initial configuration done!</h1>'
+    flash('Inicjalizacja pomyślna.', 'success')
+    return redirect(url_for('index'))
 
 
 ##### user routing #####
@@ -64,12 +82,13 @@ def login():
 @app.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
 
 
 ##### users management #####
 @app.route('/users')
 @login_required
+@is_admin_required
 def users():
     users = User.query.all()
     return render_template('user/users.html', users = users)
@@ -77,6 +96,7 @@ def users():
 
 @app.route('/delete_user/<int:user_id>')
 @login_required
+@is_admin_required
 def delete_user(user_id):
     user = User.query.get(user_id)
     if user:
@@ -91,10 +111,15 @@ def delete_user(user_id):
 
 @app.route('/new_user', methods=['GET', 'POST'])
 @login_required
+@is_admin_required
 def new_user():
     form = UserForm()
+
     hospitals = Hospital.query.all()
     form.hospital_id.choices = [(hospital.id, hospital.name) for hospital in hospitals]
+
+    roles = Role.query.all()
+    form.role_id.choices = [(role.id, role.name) for role in roles]
     if form.validate_on_submit():
         existing_user = User.query.filter((User.name == form.name.data) | (User.email == form.email.data)).first()
         if existing_user:
@@ -109,7 +134,8 @@ def new_user():
             last_name=form.last_name.data, 
             email=form.email.data, 
             password=User.get_hashed_password(form.password.data),  # Hashowanie hasła
-            hospital_id = form.hospital_id.data
+            hospital_id = form.hospital_id.data,
+            role_id = form.role_id.data
         )
         db.session.add(new_user)
         db.session.commit()
@@ -121,17 +147,26 @@ def new_user():
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
+@is_admin_required
 def edit_user(user_id):
     user = User.query.get(user_id)
     form = EditUserForm(obj=user)
+
     hospitals = Hospital.query.all()
     form.hospital_id.choices = [(hospital.id, hospital.name) for hospital in hospitals]
+
+    roles = Role.query.all()
+    form.role_id.choices = [(role.id, role.name) for role in roles]
+
     if user:
         if form.validate_on_submit():
             form.populate_obj(user)  # Uaktualnij obiekt użytkownika na podstawie danych z formularza
             db.session.commit()
             flash('Dane użytkownika zostały zaktualizowane.', 'success')
             return redirect(url_for('users', user_id = user.id))
+        
+        form.hospital_id.default = user.hospital.id
+        form.role_id.default = user.role.id
         return render_template('user/edit_user.html', form=form, user_id = user.id)
     else:
         flash('Nie znaleziono użytkownika o podanym identyfikatorze.', 'error')
@@ -139,6 +174,8 @@ def edit_user(user_id):
     
 
 @app.route('/change_user_status/<int:user_id>')
+@login_required
+@is_admin_required
 def change_user_status(user_id):
     user = User.query.get(user_id)
     if user:
@@ -154,12 +191,14 @@ def change_user_status(user_id):
 ##### hospital management #####
 @app.route('/hospitals')
 @login_required
+@is_admin_required
 def hospitals():
     hospitals = Hospital.query.all()
     return render_template('hospital/hospitals.html', hospitals = hospitals)
 
 @app.route('/new_hospital', methods = ['GET', 'POST'])
 @login_required
+@is_admin_required
 def new_hospital():
     form = HospitalForm()
     if form.validate_on_submit():
@@ -181,6 +220,7 @@ def new_hospital():
 
 @app.route('/edit_hospital/<int:hospital_id>', methods=['GET', 'POST'])
 @login_required
+@is_admin_required
 def edit_hospital(hospital_id):
     hospital = Hospital.query.get(hospital_id)
     form = HospitalForm(obj = hospital)
@@ -194,6 +234,7 @@ def edit_hospital(hospital_id):
 
 @app.route('/delete_hospital/<int:hospital_id>', methods=['GET', 'POST'])
 @login_required
+@is_admin_required
 def delete_hospital(hospital_id):
     hospital = Hospital.query.get(hospital_id)
     if hospital:
@@ -207,6 +248,77 @@ def delete_hospital(hospital_id):
     else:    
         flash('Szpital nie został znaleziony.', 'warning')
     return redirect(url_for('hospitals'))
+
+
+##### role management #####
+@app.route('/new_role', methods=['GET', 'POST'])
+@login_required
+@is_admin_required
+def new_role():
+    form = RoleForm()
+    if form.validate_on_submit():
+        existing_role= Role.query.filter((Role.name == form.name.data)).first()
+        if existing_role:
+            flash('Rola już istnieje.', 'warning')
+            return render_template('role/new_role.html', form = form)
+        
+        new_role = Role(
+            name = form.name.data, 
+        )
+        db.session.add(new_role)
+        db.session.commit()
+        flash('Rola została utworzona.', 'success')
+        return redirect(url_for('roles'))
+    
+    return render_template('role/new_role.html', form = form)
+
+
+@app.route('/roles')
+@login_required
+@is_admin_required
+def roles():
+    roles = Role.query.all()
+    return render_template('role/roles.html', roles = roles)
+
+
+@app.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
+@login_required
+@is_admin_required
+def edit_role(role_id):
+    if role_id == 1:
+        flash('Nie można edytować roli administratora.', 'warning')
+        return redirect(url_for('roles'))
+    role = Role.query.get(role_id)
+    form = RoleForm(obj = role)
+    if form.validate_on_submit():
+        form.populate_obj(role)
+        db.session.commit()
+        flash('Rola została zaktualizowana.', 'success')
+        return redirect(url_for('roles'))
+    return render_template('role/edit_role.html', form = form, role = role)
+
+
+@app.route('/delete_role/<int:role_id>', methods=['GET', 'POST'])
+@login_required
+@is_admin_required
+def delete_role(role_id):
+    role = Role.query.get(role_id)
+
+    if role_id == 1:
+        flash('Nie można usunąć roli administratora.', 'warning')
+        return redirect(url_for('roles')) 
+    if role:
+        user_with_hospital = User.query.filter_by(role_id=role_id).first()
+        if user_with_hospital:
+            flash('Rola w użyciu, usunięcie niemożliwe.', 'danger')
+            return redirect(url_for('roles'))
+        db.session.delete(role)
+        db.session.commit()
+        flash('Rola została usunięta.', 'success')
+    else:    
+        flash('Rola nie została znaleziona.', 'warning')
+    return redirect(url_for('roles'))
+
 
 ##### app routing #####
 @app.route('/', methods=['GET', 'POST'])

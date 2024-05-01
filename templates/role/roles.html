@@ -6,7 +6,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Usuwanie użytkownika</h5>
+                    <h5 class="modal-title" id="exampleModalLabel">Usuwanie roli</h5>
                     <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="idDeleteModalBody">
@@ -14,8 +14,8 @@
                 </div>
                 <div class="modal-footer">
                     <form action="" method="GET" id="confirmDeleteForm">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-danger">Delete</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-danger">Usuń</button>
                     </form>
                 </div>
             </div>
@@ -36,41 +36,27 @@
             });
         });
     </script>
-
     <div class="container">
         <table class="table">
             <thead>
             <tr>
                 <th scope="col">#</th>
-                <th scope="col">Nazwa użytkownika</th>
-                <th scope="col">Email</th>
-                <th scope="col">Imie</th>
-                <th scope="col">Nazwisko</th>
-                <th scope="col">Szpital</th>
-                <th scope="col">Aktywny</th>
-                <th scope="col">Rola</th>
+                <th scope="col">Nazwa</th>
                 <th scope="col">Actions</th>
             </tr>
             </thead>
             <tbody>
-            {% for user in users %}
+            {% for role in roles %}
             <tr>
-                <th scope="row">{{ user.id }}</th>
-                <td>{{ user.name }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.first_name }}</td>
-                <td>{{ user.last_name }}</td>
-                <td>{{ user.hospital.name }}</td>
-                <td>{{ 'Tak' if user.is_active else 'Nie' }}</td>
-                <td>{{ user.role.name }}</td>
+                <th scope="row">{{ role.id }}</th>
+                <td>{{ role.name }}</td>
                 <td>
-                    <a href="{{ url_for('change_user_status', user_id=user.id) }}" class="btn btn-{{ 'danger' if user.is_active else 'success' }} btn-sm" role="button">{{ 'Blokuj' if user.is_active else 'Aktywuj' }}</a>
-                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-success btn-sm" role="button">Edit</a>
+                    <a href="{{ url_for('edit_role', role_id=role.id) }}" class="btn btn-success btn-sm" role="button">Edytuj</a>
                     <a type="button" class="btn btn-danger btn-sm delete-confirm"
                        data-toggle="modal" data-target="#confirmDeleteModal"
-                       data-desc="{{ 'Delete user {}?'.format(user.name) }}"
-                       data-url="{{ url_for('delete_user', user_id=user.id) }}">
-                        Delete
+                       data-desc="{{ 'Usunąć rolę {}?'.format(role.name) }}"
+                       data-url="{{ url_for('delete_role', role_id=role.id) }}">
+                        Usuń
                     </a>
                 </td>
             </tr>

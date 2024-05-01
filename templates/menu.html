@@ -9,7 +9,7 @@
         <li class="nav-item">
           <a class="nav-link {{ 'active' if active_menu=='home' }}" href="{{ url_for('index') }}">Główna</a>
         </li>
-        {% if current_user.is_authenticated %}
+        {% if current_user.is_authenticated and current_user.is_admin() %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
           data-toggle="dropdown" aria-expanded="false">
@@ -21,7 +21,7 @@
           </ul>
         </li>
         {% endif %}
-        {% if current_user.is_authenticated %}
+        {% if current_user.is_authenticated and current_user.is_admin() %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
           data-toggle="dropdown" aria-expanded="false">
@@ -30,6 +30,18 @@
           <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
             <li><a class="dropdown-item" href="{{ url_for('hospitals') }}">Lista szpitali</a></li>
             <li><a class="dropdown-item" href="{{ url_for('new_hospital') }}">Nowy szpital</a></li>
+          </ul>
+        </li>
+        {% endif %}
+        {% if current_user.is_authenticated and current_user.is_admin() %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+          data-toggle="dropdown" aria-expanded="false">
+          Role
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item" href="{{ url_for('roles') }}">Lista ról</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('new_role') }}">Nowa rola</a></li>
           </ul>
         </li>
         {% endif %}
