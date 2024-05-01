@@ -1,8 +1,8 @@
-from flask import Flask, render_template, url_for, request, redirect
+from flask import Flask, render_template, url_for, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, logout_user
+from flask_login import LoginManager, login_user, logout_user, current_user
 from safety import is_safe_url
-from forms import LoginForm
+from forms import LoginForm, UserForm, EditUserForm
 
 
 app = Flask(__name__)
@@ -43,34 +43,92 @@ def init():
     return '<h1>Initial configuration done!</h1>'
 
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    return 'fWorld'
-
-
+##### user routing #####
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-
     if form.validate_on_submit():
         user = User.query.filter(User.name == form.name.data).first()
-        if user != None and User.verify_password(user.password, form.password.data):
-            login_user(user, remember = form.remember.data)
-            
-            next = request.args.get('next')
-            if next and is_safe_url(next):
-                return redirect(next)
-            
-            return 'jestes zalogowany mistrzu'
-
-    return render_template('login.html', form=form)
+        if user and User.verify_password(user.password, form.password.data):
+            login_user(user, remember=form.remember.data)
+            next_page = request.args.get('next')
+            if next_page and is_safe_url(next_page):
+                return redirect(next_page)
+            return redirect(url_for('index'))  # Przekierowuje do strony głównej po zalogowaniu
+    return render_template('login.html', form = form)
 
 
 @app.route('/logout')
 def logout():
     logout_user()
-    return '<h1>You are logged out</h1>'
+    return redirect(url_for('index'))
 
+
+##### users management #####
+@app.route('/users')
+def users():
+    users = User.query.all()
+    return render_template('users.html', users = users)
+
+
+@app.route('/delete_user/<int:user_id>')
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        flash('Użytkownik został usunięty.', 'success')
+    else:
+        flash('Użytkownik nie został znaleziony.', 'warning')
+
+    return redirect(url_for('users'))
+
+
+@app.route('/new_user', methods=['GET', 'POST'])
+def new_user():
+    form = UserForm()
+    if form.validate_on_submit():
+        existing_user = User.query.filter((User.name == form.name.data) | (User.email == form.email.data)).first()
+        if existing_user:
+            if existing_user.name == form.name.data:
+                flash('Nazwa użytkownika już istnieje.', 'warning')
+            if existing_user.email == form.email.data:
+                flash('Email już istnieje w systemie.', 'warning')
+            return render_template('new_user.html', form = form)
+        new_user = User(
+            name=form.name.data, 
+            first_name=form.first_name.data,
+            last_name=form.last_name.data, 
+            email=form.email.data, 
+            password=User.get_hashed_password(form.password.data)  # Hashowanie hasła
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Rejestracja zakończona sukcesem!', 'success')
+        return redirect(url_for('login'))
+    return render_template('new_user.html', form = form)
+
+
+@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+    user = User.query.get(user_id)
+    form = EditUserForm(obj=user)
+    if user:
+        if form.validate_on_submit():
+            form.populate_obj(user)
+            db.session.commit()
+            flash('Dane użytkownika zostały zaktualizowane.', 'success')
+            return redirect(url_for('edit_user', user_id=user.id))
+        return render_template('edit_user.html', form = form, user = user)
+    else:
+        flash('Nie znaleziono użytkownika o podanym identyfikatorze.', 'warning')
+        return redirect(url_for('users'))
+    
+
+##### app routing #####
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    return render_template('index.html', current_user = current_user)
 
 # @app.route('/docs')
 # @login_required

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12 text-center">
+            <h2>Archiwum Danych Eksperymentalnych</h2>
+            <p class="lead">Platforma do bezpiecznego zarządzania i archiwizacji danych eksperymentalnych za pomocą technologii blockchain.</p>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-6 offset-md-3">
+            <img src="{{ url_for('static', filename='experiment.jpg') }}" class="img-fluid rounded mx-auto d-block" alt="Dane Eksperymentalne">
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <p class="text-muted">Archiwum Danych Eksperymentalnych to platforma, która umożliwia bezpieczne przechowywanie eksperymentalnych danych medycznych. Wykorzystuje zaawansowane technologie blockchain, aby zapewnić integralność, niezmienność i bezpieczeństwo przechowywanych danych. Niniejsza aplikacja jest interfejsem do zarządzania szpitalami oraz ich pracownikami, którzy mogą weryfikować i wprowadzać dane eksperymentalne.</p>
+        </div>
+        <div class="col-md-6 text-right">
+            <p class="text-muted">&copy; 2024 Archiwum Danych Eksperymentalnych</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
