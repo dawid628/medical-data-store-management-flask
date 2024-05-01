@@ -30,9 +30,9 @@ class EditUserForm(FlaskForm):
 
 class EditDetailsForm(FlaskForm):
     name = StringField('Nazwa użytkownika', render_kw={'readonly': True})
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    first_name = StringField('Imie', validators=[DataRequired()])
-    last_name = StringField('Nazwisko', validators=[DataRequired()])
+    email = StringField('Email', render_kw={'readonly': True})
+    first_name = StringField('Imie', render_kw={'readonly': True})
+    last_name = StringField('Nazwisko', render_kw={'readonly': True})
     password = PasswordField('Hasło', validators=[DataRequired(), Length(min=5, max=100)])     
     submit = SubmitField('Zapisz')
 
