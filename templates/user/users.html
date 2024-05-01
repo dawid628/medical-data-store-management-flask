@@ -36,13 +36,17 @@
             });
         });
     </script>
+
     <div class="container">
         <table class="table">
             <thead>
             <tr>
                 <th scope="col">#</th>
-                <th scope="col">User name</th>
+                <th scope="col">Nazwa użytkownika</th>
                 <th scope="col">Email</th>
+                <th scope="col">Imie</th>
+                <th scope="col">Nazwisko</th>
+                <th scope="col">Szpital</th>
                 <th scope="col">Actions</th>
             </tr>
             </thead>
@@ -52,6 +56,10 @@
                 <th scope="row">{{ user.id }}</th>
                 <td>{{ user.name }}</td>
                 <td>{{ user.email }}</td>
+                <td>{{ user.first_name }}</td>
+                <td>{{ user.last_name }}</td>
+                <td>{{ user.hospital.name }}</td>
+
                 <td>
                     <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-success btn-sm" role="button">Edit</a>
                     <a type="button" class="btn btn-danger btn-sm delete-confirm"

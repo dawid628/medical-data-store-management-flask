@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Nowy szpital
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-3">
+        <div class="col-5 h1">Nowy szpital</div>
+    </div>
+    <form class="col-4" action="{{ url_for('new_hospital') }}" method="POST">
+        {{ form.csrf_token }}
+        <div class="col-form-label">
+                {{ form.name.label }}
+            </div>
+            <div class="from-group">
+                {{ form.name(class="form-control") }}<br>
+            </div>
+        <button type="submit" class="btn btn-primary">Utwórz</button>
+    </form>
+</div>
+{% endblock %}

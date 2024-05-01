@@ -2,7 +2,7 @@ from flask import Flask, render_template, url_for, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, current_user
 from safety import is_safe_url
-from forms import LoginForm, UserForm, EditUserForm
+from forms import LoginForm, UserForm, EditUserForm, HospitalForm
 
 
 app = Flask(__name__)
@@ -68,7 +68,7 @@ def logout():
 @app.route('/users')
 def users():
     users = User.query.all()
-    return render_template('users.html', users = users)
+    return render_template('user/users.html', users = users)
 
 
 @app.route('/delete_user/<int:user_id>')
@@ -87,6 +87,8 @@ def delete_user(user_id):
 @app.route('/new_user', methods=['GET', 'POST'])
 def new_user():
     form = UserForm()
+    hospitals = Hospital.query.all()
+    form.hospital_id.choices = [(hospital.id, hospital.name) for hospital in hospitals]
     if form.validate_on_submit():
         existing_user = User.query.filter((User.name == form.name.data) | (User.email == form.email.data)).first()
         if existing_user:
@@ -94,36 +96,94 @@ def new_user():
                 flash('Nazwa użytkownika już istnieje.', 'warning')
             if existing_user.email == form.email.data:
                 flash('Email już istnieje w systemie.', 'warning')
-            return render_template('new_user.html', form = form)
+            return render_template('user/new_user.html', form = form)
         new_user = User(
             name=form.name.data, 
             first_name=form.first_name.data,
             last_name=form.last_name.data, 
             email=form.email.data, 
-            password=User.get_hashed_password(form.password.data)  # Hashowanie hasła
+            password=User.get_hashed_password(form.password.data),  # Hashowanie hasła
+            hospital_id = form.hospital_id.data
         )
         db.session.add(new_user)
         db.session.commit()
         flash('Rejestracja zakończona sukcesem!', 'success')
         return redirect(url_for('login'))
-    return render_template('new_user.html', form = form)
+    
+    return render_template('user/new_user.html', form = form)
 
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 def edit_user(user_id):
     user = User.query.get(user_id)
     form = EditUserForm(obj=user)
+    hospitals = Hospital.query.all()
+    form.hospital_id.choices = [(hospital.id, hospital.name) for hospital in hospitals]
     if user:
         if form.validate_on_submit():
-            form.populate_obj(user)
+            form.populate_obj(user)  # Uaktualnij obiekt użytkownika na podstawie danych z formularza
             db.session.commit()
             flash('Dane użytkownika zostały zaktualizowane.', 'success')
-            return redirect(url_for('edit_user', user_id=user.id))
-        return render_template('edit_user.html', form = form, user = user)
+            return redirect(url_for('users', user_id = user.id))
+        return render_template('user/edit_user.html', form=form, user_id = user.id)
     else:
-        flash('Nie znaleziono użytkownika o podanym identyfikatorze.', 'warning')
+        flash('Nie znaleziono użytkownika o podanym identyfikatorze.', 'error')
         return redirect(url_for('users'))
+
     
+
+##### hospital management #####
+@app.route('/hospitals')
+def hospitals():
+    hospitals = Hospital.query.all()
+    return render_template('hospital/hospitals.html', hospitals = hospitals)
+
+@app.route('/new_hospital', methods = ['GET', 'POST'])
+def new_hospital():
+    form = HospitalForm()
+    if form.validate_on_submit():
+        existing_hospital = Hospital.query.filter((Hospital.name == form.name.data)).first()
+        if existing_hospital:
+            flash('Szpital już istnieje.', 'warning')
+            return render_template('hospital/new_hospital.html', form = form)
+        
+        new_hospital = Hospital(
+            name = form.name.data, 
+        )
+        db.session.add(new_hospital)
+        db.session.commit()
+        flash('Szpital został utworzony.', 'success')
+        return redirect(url_for('hospitals'))
+
+    return render_template('hospital/new_hospital.html', form = form)
+
+
+@app.route('/edit_hospital/<int:hospital_id>', methods=['GET', 'POST'])
+def edit_hospital(hospital_id):
+    hospital = Hospital.query.get(hospital_id)
+    form = HospitalForm(obj = hospital)
+    if form.validate_on_submit():
+        form.populate_obj(hospital)  # Uaktualnij obiekt użytkownika na podstawie danych z formularza
+        db.session.commit()
+        flash('Szpital został zaktualizowany.', 'success')
+        return redirect(url_for('hospitals'))
+    return render_template('hospital/edit_hospital.html', form = form, hospital = hospital)
+
+
+@app.route('/delete_hospital/<int:hospital_id>', methods=['GET', 'POST'])
+def delete_hospital(hospital_id):
+    hospital = Hospital.query.get(hospital_id)
+    if hospital:
+        user_with_hospital = User.query.filter_by(hospital_id=hospital_id).first()
+        if user_with_hospital:
+            flash('Szpital w użyciu, usunięcie niemożliwe.', 'danger')
+            return redirect(url_for('hospitals'))
+        db.session.delete(hospital)
+        db.session.commit()
+        flash('Szpital został usunięty.', 'success')
+    else:    
+        flash('Szpital nie został znaleziony.', 'warning')
+    return redirect(url_for('hospitals'))
 
 ##### app routing #####
 @app.route('/', methods=['GET', 'POST'])

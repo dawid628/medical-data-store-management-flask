@@ -3,6 +3,12 @@ import binascii
 from flask_login import UserMixin
 from app import db
 
+class Hospital(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True)    
+
+    user = db.relationship('User', backref='hospital', lazy='dynamic')
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
@@ -10,6 +16,8 @@ class User(db.Model, UserMixin):
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
     email = db.Column(db.String(50), unique=True)
+
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospital.id'))
 
     def __repr__(self):
         return 'User: ({})'.format(self.name)
@@ -31,8 +39,3 @@ class User(db.Model, UserMixin):
         salt.encode('ascii'), 100000)
         pwdhash = binascii.hexlify(pwdhash).decode('ascii')
         return pwdhash == stored_password
-    
-    
-class Hospital(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True)    

@@ -19,7 +19,19 @@
             <li><a class="dropdown-item" href="{{ url_for('users') }}">Lista użytkowników</a></li>
             <li><a class="dropdown-item" href="{{ url_for('new_user') }}">Nowy użytkownik</a></li>
           </ul>
-          </li>
+        </li>
+        {% endif %}
+        {% if current_user.is_authenticated %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+          data-toggle="dropdown" aria-expanded="false">
+          Szpitale
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item" href="{{ url_for('hospitals') }}">Lista szpitali</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('new_hospital') }}">Nowy szpital</a></li>
+          </ul>
+        </li>
         {% endif %}
         {% if current_user.is_anonymous %}
         <li class="nav-item">
