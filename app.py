@@ -16,7 +16,7 @@ login_manager.login_message = 'Musisz być zalogowany jako pracownik.'
 
 
 ##### import models after db init #####
-from models import User
+from models import User, Hospital
 
 
 
