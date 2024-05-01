@@ -47,12 +47,17 @@
         {% endif %}
         {% if current_user.is_anonymous %}
         <li class="nav-item">
-          <a class="nav-link {{ 'active' if active_menu=='login' }}" href="{{ url_for('login') }}">Zaloguj</a>
+          <a class="nav-link" href="{{ url_for('login') }}">Zaloguj</a>
         </li>
         {% endif %}
         {% if current_user.is_authenticated %}
         <li class="nav-item">
-          <a class="nav-link {{ 'active' if active_menu=='logout' }}" href="{{ url_for('logout') }}">Wyloguj</a>
+          <a class="nav-link" href="{{ url_for('edit_user', user_id=current_user.id) }}">Profil</a>
+        </li>
+        {% endif %}
+        {% if current_user.is_authenticated %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('logout') }}">Wyloguj</a>
         </li>
         {% endif %}
       </ul>

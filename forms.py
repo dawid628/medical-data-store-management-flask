@@ -24,10 +24,17 @@ class EditUserForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     first_name = StringField('Imie', validators=[DataRequired()])
     last_name = StringField('Nazwisko', validators=[DataRequired()])
-    password = PasswordField('Hasło', validators=[DataRequired(), Length(min=5, max=100)])
     hospital_id = SelectField('Szpital', validators=[DataRequired()], coerce=int)
     role_id = SelectField('Rola', validators=[DataRequired()], coerce=int)
-    submit = SubmitField('Zapisz')    
+    submit = SubmitField('Zapisz')
+
+class EditDetailsForm(FlaskForm):
+    name = StringField('Nazwa użytkownika', render_kw={'readonly': True})
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    first_name = StringField('Imie', validators=[DataRequired()])
+    last_name = StringField('Nazwisko', validators=[DataRequired()])
+    password = PasswordField('Hasło', validators=[DataRequired(), Length(min=5, max=100)])     
+    submit = SubmitField('Zapisz')
 
 ##### hospital forms #####
 class HospitalForm(FlaskForm):

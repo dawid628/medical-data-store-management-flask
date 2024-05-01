@@ -2,7 +2,7 @@ from flask import Flask, render_template, url_for, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from safety import is_safe_url
-from forms import LoginForm, UserForm, EditUserForm, HospitalForm, RoleForm
+from forms import LoginForm, UserForm, EditUserForm, HospitalForm, RoleForm, EditDetailsForm
 from functools import wraps
 
 
@@ -66,11 +66,16 @@ def init():
 
 ##### user routing #####
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+def login():    
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter(User.name == form.name.data).first()
         if user and User.verify_password(user.password, form.password.data):
+            if not user.is_active:
+                flash("Twoje konto jest zablokowane.", 'warning')
+                return render_template('user/login.html', form = form)
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
@@ -147,30 +152,41 @@ def new_user():
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
-@is_admin_required
 def edit_user(user_id):
     user = User.query.get(user_id)
-    form = EditUserForm(obj=user)
 
-    hospitals = Hospital.query.all()
-    form.hospital_id.choices = [(hospital.id, hospital.name) for hospital in hospitals]
+    if not current_user.is_admin() and not current_user.id == user_id:
+        flash('Musisz być administratorem lub właścicielem konta.', 'warning')
+        return redirect(url_for('index'))
+    
+    if current_user.is_admin():
+        form = EditUserForm(obj=user)
+        
+        hospitals = Hospital.query.all()
+        form.hospital_id.choices = [(hospital.id, hospital.name) for hospital in hospitals]
 
-    roles = Role.query.all()
-    form.role_id.choices = [(role.id, role.name) for role in roles]
-
+        roles = Role.query.all()
+        form.role_id.choices = [(role.id, role.name) for role in roles]
+        
+        form.hospital_id.default = user.hospital.id if user.hospital else hospitals[0].id
+        form.role_id.default = user.role.id
+    else:
+        form = EditDetailsForm(obj=user)    
+    
     if user:
         if form.validate_on_submit():
             form.populate_obj(user)  # Uaktualnij obiekt użytkownika na podstawie danych z formularza
+            if form.password.data:  # Sprawdź, czy zostało dostarczone nowe hasło
+                user.password = User.get_hashed_password(form.password.data)  # Zahaszuj i przypisz nowe hasło
             db.session.commit()
             flash('Dane użytkownika zostały zaktualizowane.', 'success')
-            return redirect(url_for('users', user_id = user.id))
+            return redirect(url_for('index'))
         
-        form.hospital_id.default = user.hospital.id
-        form.role_id.default = user.role.id
-        return render_template('user/edit_user.html', form=form, user_id = user.id)
+        return render_template('user/edit_user.html', form=form, user_id=user.id)
     else:
         flash('Nie znaleziono użytkownika o podanym identyfikatorze.', 'error')
         return redirect(url_for('users'))
+
     
 
 @app.route('/change_user_status/<int:user_id>')
@@ -322,7 +338,6 @@ def delete_role(role_id):
 
 ##### app routing #####
 @app.route('/', methods=['GET', 'POST'])
-@login_required
 def index():
     return render_template('index.html', current_user = current_user)
 
