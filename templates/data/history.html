@@ -13,6 +13,7 @@
             </thead>
             <tbody>
             {% for item in history %}
+            {% if item.hospital.name == current_user.hospital.name or current_user.is_admin() %}
             <tr>
                 <th scope="row">{{ item.id }}</th>
                 <td>{{ item.user.name }}</td>
@@ -20,6 +21,7 @@
                 <td>{{ item.filename }}</td>
                 <td>{{ item.date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
             </tr>
+            {% endif %}
             {% endfor %}
             </tbody>
         </table>

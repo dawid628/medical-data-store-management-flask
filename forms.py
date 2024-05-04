@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, validators, SelectField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, validators, SelectField, HiddenField, TextAreaField
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, Email, Length
 from flask_wtf.file import FileField, FileRequired
@@ -48,5 +48,12 @@ class RoleForm(FlaskForm):
 
 ##### file forms #####
 class CSVUploadForm(FlaskForm):
+    description = TextAreaField('Opis', validators=[DataRequired()])
     csv_file = FileField('Wybierz plik CSV', validators=[FileRequired()])
+    submit = SubmitField('Dodaj plik CSV')
+
+class DataEditForm(FlaskForm):
+    parent_id = HiddenField()
+    version = HiddenField()
+    csv_file = FileField('Wybierz plik CSV', validators=[DataRequired()])
     submit = SubmitField('Dodaj plik CSV')

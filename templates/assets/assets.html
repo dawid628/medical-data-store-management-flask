@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    @media (min-width: 992px) { /* Dotyczy tylko większych ekranów */
+        .modal-dialog {
+            max-width: 100%; /* Ustawia szerokość modala na 100% */
+            width: auto !important; /* Zapewnia, że szerokość jest automatycznie dostosowywana */
+        }
+        .modal-content {
+            width: 98%; /* Nieco mniejsza szerokość, aby uwzględnić paddingi i marginesy */
+            margin: auto; /* Centruje modal */
+        }
+    }
+    .container-custom {
+        width: 80%;
+        margin: auto;
+    }
+</style>
+
+
+<div class="container-custom">
+    <h2>Lista danych</h2>
+    <div class="mb-3">
+        <a href="{{ url_for('export_csv') }}" class="btn btn-primary">Eksportuj do CSV</a>
+    </div>
+    <form action="{{ url_for('get_assets') }}" method="GET">
+        <input type="text" name="filter_first_name" placeholder="Filtruj po imieniu">
+        <input type="text" name="filter_last_name" placeholder="Filtruj po nazwisku">
+        <input type="text" name="filter_hospital" placeholder="Filtruj po szpitalu">
+        <input type="checkbox" name="show_deleted" id="show_deleted">
+        <label for="show_deleted">Pokaż usunięte</label>
+        <button type="submit" class="btn btn-primary">Filtruj</button>
+    </form>
+    <table class="table text-center table-hover">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Imię</th>
+                <th scope="col">Nazwisko</th>
+                <th scope="col">Szpital</th>
+                <th scope="col">Usunięto</th>
+                <th scope="col">Wersja</th>
+                <th scope="col">Data dodania</th>
+                <th scope="col">Opis</th>
+                <th scope="col">Dane</th>
+                <th scope="col">Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for asset in assets %}
+        {% if asset.IsEdited == 0 and (asset.Hospital == current_user.hospital.name or current_user.is_admin())%}
+        <tr>
+            <th scope="row">{{ asset.ID }}</th>
+            <td>{{ asset.FirstName }}</td>
+            <td>{{ asset.LastName }}</td>
+            <td>{{ asset.Hospital }}</td>
+            <td>{{ 'Tak' if asset.IsDeleted else 'Nie' }}</td>
+            <td>{{ asset.Version }}</td>
+            <td>{{ asset.CreatedAt }}</td>
+            <td>{{ asset.Description }}</td>
+            <td>{{ asset.Data }}</td>
+            <td>
+                <form action="{{ url_for('asset_delete', asset_id=asset.ID) }}" method="POST">
+                    <button type="submit" class="btn btn-danger">Usuń</button>
+                </form>
+                <button type="button" class="btn btn-secondary mt-2" onclick="showDataDetails('{{ asset.Data}}')">
+                    Dane
+                </button>
+                <a href="{{ url_for('asset_edit', asset_id=asset.ID, asset_version=asset.Version) }}" class="btn btn-primary mt-2">Edytuj</a>
+                {% if asset.Version > 1 %}
+                <button type="button" class="btn btn-info mt-2" onclick="showHistory('{{ asset.ID }}')" data-bs-toggle="modal" data-bs-target="#historyModal">
+                    Historia
+                </button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Globalny Modal do Historii -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl custom-modal-width" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historyModalLabel">Historia Assetu</h5>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" aria-label="Close">X</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Imię</th>
+                                <th scope="col">Nazwisko</th>
+                                <th scope="col">Szpital</th>
+                                <th scope="col">Usunięto</th>
+                                <th scope="col">Wersja</th>
+                                <th scope="col">Data dodania</th>
+                                <th scope="col">Opis</th>
+                                <th scope="col">Dane</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyContent">
+                     </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal dla danych -->
+<div class="modal fade" id="dataDetailsModal" tabindex="-1" aria-labelledby="dataDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dataDetailsModalLabel">Szczegóły danych</h5>
+                <button type="button" class="btn-primary" data-dismiss="modal" aria-label="Close">X</button>
+            </div>
+            <div class="modal-body" id="dataDetailsContent">
+                <!-- Tu zostanie wstawiona tabela z danymi -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showHistory(assetId) {
+    fetch(`/assets/history/${assetId}`)
+        .then(response => response.json())
+        .then(data => {
+            const historyContent = document.getElementById('historyContent');
+            historyContent.innerHTML = '';  // Czyszczenie tabeli przed użyciem
+
+            if (Array.isArray(data)) {
+                data.forEach(asset => {
+                    let row = `<tr>
+                        <td>${asset.ID}</td>
+                        <td>${asset.FirstName}</td>
+                        <td>${asset.LastName}</td>
+                        <td>${asset.Hospital}</td>
+                        <td>${asset.IsDeleted ? 'Tak' : 'Nie'}</td>
+                        <td>${asset.Version}</td>
+                        <td>${asset.CreatedAt}</td>
+                        <td>${asset.Description}</td>
+                        <td>${asset.Data}</td>
+                    </tr>`;
+                    historyContent.innerHTML += row;
+                });
+            } else {
+                historyContent.innerHTML = '<tr><td colspan="9" class="text-center">Brak historii dla tego assetu.</td></tr>';
+            }
+            new bootstrap.Modal(document.getElementById('historyModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading history:', error);
+            historyContent.innerHTML = '<tr><td colspan="9" class="text-center">Błąd podczas ładowania historii.</td></tr>';
+        });
+}
+
+function showDataDetails(dataJson) {
+    const cleanedDataJson = dataJson.replaceAll('\n', ''); // Usuń znaki nowej linii
+    const data = JSON.parse(cleanedDataJson);
+    const modalBody = document.getElementById('dataDetailsContent');
+
+    if (data.length === 0) {
+        modalBody.innerHTML = '<p>Nie ma danych do wyświetlenia.</p>';
+        new bootstrap.Modal(document.getElementById('dataDetailsModal')).show();
+        return;
+    }
+
+    // Tworzenie tabeli na podstawie danych JSON
+    let headers = Object.keys(data[0]);
+    let headerRow = headers.map(header => `<th>${header}</th>`).join('');
+
+    let tableRows = data.map(item => {
+        let row = headers.map(header => `<td class="align-middle">${item[header]}</td>`).join('');
+        return `<tr>${row}</tr>`;
+    }).join('');
+
+    modalBody.innerHTML = `<div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>${headerRow}</tr>
+            </thead>
+            <tbody>
+                ${tableRows}
+            </tbody>
+        </table>
+    </div>`;
+
+    new bootstrap.Modal(document.getElementById('dataDetailsModal')).show();
+}
+
+
+</script>
+{% endblock %}

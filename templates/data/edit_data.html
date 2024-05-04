@@ -1,14 +1,17 @@
 {% extends 'base.html' %}
 
 {% block title %}
-    Dodawanie danych
+    Edycja danych
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <h2>Dodaj plik CSV</h2>
+    <h2>Edytuj dane #{{ asset_id }}</h2>
     <form method="POST" enctype="multipart/form-data">
+        {{ form.csrf_token }}
         {{ form.hidden_tag() }}
+        <input type="hidden" name="parent_id" value="{{ asset_id }}">
+        <input type="hidden" name="version" value="{{ asset_version }}">
         <div class="form-group">
             {{ form.csv_file.label(class="form-label") }}
             {{ form.csv_file(class="form-control") }}
